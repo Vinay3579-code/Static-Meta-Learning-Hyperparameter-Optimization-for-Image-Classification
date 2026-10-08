@@ -73,35 +73,6 @@ The implementation follows four conceptual stages.
 
 </p>
 
-```mermaid
-flowchart TD
-    A[5 datasets × 4 episodic regimes] --> B[800 deterministic tasks\n560 train / 120 validation / 120 test]
-    B --> C[Task descriptors]
-    C --> C1[Zero-SML\n64 static features]
-    C --> C2[Probe-SML\n64 static + 20 probe features]
-    B --> D[Protocol features\n n_way, n_shot, n_query]
-    C1 --> E[67-D Zero-SML input]
-    C2 --> F[87-D Probe-SML input]
-    D --> E
-    D --> F
-
-    G[Frozen 64-anchor portfolio] --> H[Stage 1\nAll 64 anchors\nProtoNet seed 101]
-    H --> I[Top-4 + anchors within 0.002 of Stage-1 best]
-    I --> J[Stage 2\nSeeds 202 + 303]
-    J --> K[Robust validation mean]
-    K --> L[Reference + equivalence set E_t]
-
-    E --> M[Zero-SML MLP]
-    F --> N[Probe-SML MLP]
-    M --> O[19-logit vocabulary]
-    N --> O
-    L --> O
-    O --> P[Configuration recommendation]
-    P --> Q[Frozen configuration lookup]
-    Q --> R[Train selected Prototypical Network]
-    R --> S[600-episode held-out test bank]
-```
-
 The standard final recommendation workflow uses a frozen portfolio and does not run an iterative target-task search after the task descriptor is constructed.
 
 ---
