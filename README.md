@@ -1184,7 +1184,7 @@ A GPU-enabled PyTorch installation is recommended for reproducing the complete b
 ## Clone
 
 ```bash
-git clone <repository-url>
+git clone github.com/Vinay3579-code/Static-Meta-Learning-Hyperparameter-Optimization-for-Image-Classification
 cd ml_dl_cp
 ```
 
