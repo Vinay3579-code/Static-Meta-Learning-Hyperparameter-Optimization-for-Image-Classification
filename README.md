@@ -1684,5 +1684,3 @@ Dataset-specific preprocessing follows the interfaces provided by Torchvision an
 ---
 
 # License
-
-No explicit license file is included in the supplied project tree. Add the intended repository license before public redistribution.
