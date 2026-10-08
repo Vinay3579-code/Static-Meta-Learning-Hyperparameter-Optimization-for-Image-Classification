@@ -1,6 +1,10 @@
 # Static Meta-Learning for Direct Hyperparameter Recommendation in Few-Shot Image Classification
 
-A reproducible research implementation of **Static Meta-Learning (SML)** for direct configuration recommendation in few-shot image classification. The framework learns a task-conditioned mapping from compact episode descriptors to a configuration from a frozen 64-anchor hyperparameter portfolio, avoiding iterative target-task portfolio search.
+A reproducible official research implementation of **Static Meta-Learning (SML)** for direct configuration recommendation in few-shot image classification as Communicated in the Neural Computing and Applications, Springer; decision pending:
+
+> **Static Meta-Learning for Direct Hyperparameter Recommendation in Few-Shot Image Classification**
+
+The framework learns a task-conditioned mapping from compact episode descriptors to a configuration from a frozen 64-anchor hyperparameter portfolio, avoiding iterative target-task portfolio search.
 
 The repository contains the full experimental pipeline: class-disjoint dataset preparation, deterministic few-shot task generation, descriptor extraction, two-stage validation-selected reference construction, Zero-SML and Probe-SML meta-learning, Neural Performance Predictor (Probe-NPP), Random Search, Bayesian Optimization, Hyperband, BOHB, strict five-dataset leave-one-dataset-out (LODO) evaluation, held-out testing, paired bootstrap analysis, and paper-figure/table generation.
 
@@ -69,7 +73,7 @@ The implementation follows four conceptual stages.
 
 <p align="center">
 
-<img src="figures/Static Meta-Learning Pipeline Architecture.png" width="1000">
+<img src="figures/Architecture.png" width="1000">
 
 </p>
 
