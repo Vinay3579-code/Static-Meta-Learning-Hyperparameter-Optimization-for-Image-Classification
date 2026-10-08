@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "protocol_name": "final_oracle_budget_v2",
+  "selected_training_episodes": 200,
+  "validation_episodes": 100,
+  "configuration_count": 64,
+  "reference_training_episodes": 300,
+  "screening_task_count": 10,
+  "screening_model_seeds": [
+    101
+  ],
+  "decision": {
+    "budget_100_passed": false,
+    "budget_200_passed": true,
+    "budget_200_median_spearman": 0.9545175087105005,
+    "budget_200_minimum_spearman": 0.8903846153846153,
+    "budget_200_equivalent_fraction": 1.0,
+    "budget_200_maximum_regret_pp": 0.0
+  },
+  "source_summary": "results/oracles/budget_stability_v2_analysis/summary.json",
+  "source_summary_sha256": "5c2db0b31350b4c2ba09bd69e4a6b7923a206ee93a5225f42be0c342bf20a731"
+}

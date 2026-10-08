@@ -1,0 +1,11 @@
+Date: 2026-07-31T22:40:29+05:30
+Host: hpz8w2
+Kernel: 6.17.0-1025-oem
+Python: Python 3.12.3
+PyTorch: 2.13.0+cu130
+CUDA build: 13.0
+CUDA available: True
+GPU count: 3
+
+Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.173

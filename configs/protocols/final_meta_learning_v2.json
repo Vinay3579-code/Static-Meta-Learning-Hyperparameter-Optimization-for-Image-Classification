@@ -1,0 +1,213 @@
+{
+  "schema_version": 2,
+  "status": "FROZEN_BEFORE_TEST_ORACLE",
+  "test_oracle_labels_seen": false,
+  "meta_training_tasks": 560,
+  "meta_validation_tasks": 120,
+  "final_refit_tasks": 680,
+  "final_test_tasks": 120,
+  "primary_method": {
+    "name": "Zero-SML MLP ensemble",
+    "descriptor_dimension": 64,
+    "protocol_dimension": 3,
+    "input_dimension": 67,
+    "protocol_features": [
+      "n_way",
+      "n_shot",
+      "n_query"
+    ],
+    "dataset_identity_used": false,
+    "output_semantics": "oracle-equivalent configuration classification",
+    "loss": "soft-target cross entropy",
+    "ensemble": "three-seed deterministic majority vote",
+    "ensemble_tie_break": "lexicographically smallest config_id",
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "final_refit_epochs": {
+      "101": 3,
+      "202": 4,
+      "303": 4
+    },
+    "architecture": [
+      "Linear(67,256)",
+      "LayerNorm(256)",
+      "GELU",
+      "Dropout(0.20)",
+      "Linear(256,128)",
+      "LayerNorm(128)",
+      "GELU",
+      "Dropout(0.20)",
+      "Linear(128,64)",
+      "LayerNorm(64)",
+      "GELU",
+      "Dropout(0.10)",
+      "Linear(64,output_dim)"
+    ],
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64
+  },
+  "probe_ablation": {
+    "name": "Probe-SML MLP ensemble",
+    "descriptor_dimension": 84,
+    "protocol_dimension": 3,
+    "input_dimension": 87,
+    "dataset_identity_used": false,
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "final_refit_epochs": {
+      "101": 3,
+      "202": 6,
+      "303": 8
+    },
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64
+  },
+  "validation_results": {
+    "zero_seed_rates": [
+      0.8,
+      0.8,
+      0.775
+    ],
+    "probe_seed_rates": [
+      0.8,
+      0.8,
+      0.7916666666666666
+    ],
+    "zero_ensemble_equivalent_rate": 0.8,
+    "probe_ensemble_equivalent_rate": 0.8,
+    "best_classical": {
+      "feature_set": "Probe-SML",
+      "model": "weighted_extra_trees",
+      "hard_accuracy": 0.5083333333333333,
+      "equivalent_rate": 0.7833333333333333
+    }
+  },
+  "static_validation_baselines": [
+    {
+      "method": "global_majority",
+      "hard_accuracy": 0.3666666666666666,
+      "oracle_equivalent_rate": 0.575,
+      "fallback_count": 0,
+      "uses_dataset_identity": false,
+      "hard_accuracy_percent": 36.66666666666666,
+      "oracle_equivalent_rate_percent": 57.49999999999999
+    },
+    {
+      "method": "regime_majority",
+      "hard_accuracy": 0.3916666666666666,
+      "oracle_equivalent_rate": 0.6083333333333333,
+      "fallback_count": 0,
+      "uses_dataset_identity": false,
+      "hard_accuracy_percent": 39.16666666666666,
+      "oracle_equivalent_rate_percent": 60.83333333333333
+    },
+    {
+      "method": "dataset_majority",
+      "hard_accuracy": 0.5166666666666667,
+      "oracle_equivalent_rate": 0.7083333333333334,
+      "fallback_count": 0,
+      "uses_dataset_identity": true,
+      "hard_accuracy_percent": 51.66666666666667,
+      "oracle_equivalent_rate_percent": 70.83333333333334
+    },
+    {
+      "method": "dataset_regime_majority",
+      "hard_accuracy": 0.4833333333333333,
+      "oracle_equivalent_rate": 0.675,
+      "fallback_count": 0,
+      "uses_dataset_identity": true,
+      "hard_accuracy_percent": 48.333333333333336,
+      "oracle_equivalent_rate_percent": 67.5
+    }
+  ],
+  "classical_validation_models": [
+    {
+      "feature_set": "Probe-SML",
+      "model": "weighted_extra_trees",
+      "hard_accuracy": 0.5083333333333333,
+      "equivalent_rate": 0.7833333333333333,
+      "hard_accuracy_percent": 50.83333333333333,
+      "equivalent_rate_percent": 78.33333333333333
+    },
+    {
+      "feature_set": "Probe-SML",
+      "model": "weighted_logistic",
+      "hard_accuracy": 0.525,
+      "equivalent_rate": 0.775,
+      "hard_accuracy_percent": 52.5,
+      "equivalent_rate_percent": 77.5
+    },
+    {
+      "feature_set": "Zero-SML",
+      "model": "weighted_logistic",
+      "hard_accuracy": 0.4916666666666666,
+      "equivalent_rate": 0.75,
+      "hard_accuracy_percent": 49.16666666666666,
+      "equivalent_rate_percent": 75.0
+    },
+    {
+      "feature_set": "Probe-SML",
+      "model": "weighted_random_forest",
+      "hard_accuracy": 0.4583333333333333,
+      "equivalent_rate": 0.725,
+      "hard_accuracy_percent": 45.83333333333333,
+      "equivalent_rate_percent": 72.5
+    },
+    {
+      "feature_set": "Zero-SML",
+      "model": "weighted_extra_trees",
+      "hard_accuracy": 0.45,
+      "equivalent_rate": 0.725,
+      "hard_accuracy_percent": 45.0,
+      "equivalent_rate_percent": 72.5
+    },
+    {
+      "feature_set": "Probe-SML",
+      "model": "equivalence_knn_k15",
+      "hard_accuracy": 0.4833333333333333,
+      "equivalent_rate": 0.7083333333333334,
+      "hard_accuracy_percent": 48.333333333333336,
+      "equivalent_rate_percent": 70.83333333333334
+    },
+    {
+      "feature_set": "Zero-SML",
+      "model": "equivalence_knn_k15",
+      "hard_accuracy": 0.4833333333333333,
+      "equivalent_rate": 0.7,
+      "hard_accuracy_percent": 48.333333333333336,
+      "equivalent_rate_percent": 70.0
+    },
+    {
+      "feature_set": "Zero-SML",
+      "model": "weighted_random_forest",
+      "hard_accuracy": 0.4,
+      "equivalent_rate": 0.675,
+      "hard_accuracy_percent": 40.0,
+      "equivalent_rate_percent": 67.5
+    }
+  ],
+  "final_test_policy": {
+    "predictions_must_be_generated_before_test_oracle": true,
+    "no_model_selection_after_test_oracle": true,
+    "primary_metric": "test regret relative to robust oracle",
+    "secondary_metrics": [
+      "oracle-equivalent recommendation rate",
+      "hard oracle-label accuracy",
+      "mean regret",
+      "median regret",
+      "95th-percentile regret",
+      "maximum regret",
+      "recommendation latency"
+    ]
+  }
+}

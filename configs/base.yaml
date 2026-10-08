@@ -1,0 +1,95 @@
+project:
+  name: sml_hpo_few_shot
+  seed: 42
+  output_dir: results
+
+hardware:
+  device: cuda
+  precision: fp32
+  deterministic: true
+  cudnn_benchmark: false
+
+episode:
+  n_way: 5
+  n_shot: 5
+  n_query: 15
+  image_size: 84
+  channels: 3
+
+model:
+  architecture: protonet_conv4
+  embedding_dim: 64
+  hidden_channels: 64
+
+training:
+  train_episodes: 300
+  validation_episodes: 100
+  test_episodes: 600
+  gradient_clip_norm: 5.0
+
+search_space:
+  learning_rate:
+    type: log_float
+    low: 0.00001
+    high: 0.01
+
+  weight_decay:
+    type: log_float
+    low: 0.000001
+    high: 0.01
+
+  optimizer:
+    type: categorical
+    values:
+      - Adam
+      - AdamW
+      - SGD
+
+  embedding_dim:
+    type: categorical
+    values:
+      - 64
+      - 128
+      - 256
+
+  dropout:
+    type: categorical
+    values:
+      - 0.0
+      - 0.1
+      - 0.3
+
+  scheduler:
+    type: categorical
+    values:
+      - none
+      - cosine
+
+oracle:
+  anchor_configurations: 40
+  sampling: latin_hypercube
+
+meta_dataset:
+  tasks_per_dataset: 400
+  train_fraction: 0.70
+  validation_fraction: 0.15
+  test_fraction: 0.15
+
+meta_learner:
+  hidden_dim: 256
+  layers: 4
+  dropout: 0.20
+  learning_rate: 0.0003
+  batch_size: 32
+  epochs: 200
+  early_stopping_patience: 20
+
+evaluation:
+  seeds:
+    - 11
+    - 22
+    - 33
+    - 44
+    - 55
+  confidence_level: 0.95
+  non_inferiority_margin: 0.01

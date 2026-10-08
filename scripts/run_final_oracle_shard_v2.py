@@ -1,0 +1,282 @@
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--index",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--splits",
+        nargs="+",
+        default=[
+            "train",
+            "validation",
+        ],
+    )
+
+    parser.add_argument(
+        "--allow-test-oracle",
+        action="store_true",
+        help=(
+            "Explicitly unlock final test-oracle "
+            "generation. Use only after test "
+            "recommendations have been frozen."
+        ),
+    )
+    parser.add_argument(
+        "--anchors",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--protocol",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--log-root",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--num-shards",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        default=0,
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda:0",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+    )
+    parser.add_argument(
+        "--rerun-complete",
+        action="store_true",
+    )
+
+    return parser.parse_args()
+
+
+def run_and_tee(
+    command: list[str],
+    log_path: Path,
+) -> None:
+    log_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with log_path.open(
+        "w",
+        encoding="utf-8",
+    ) as log_file:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+
+        assert process.stdout is not None
+
+        for line in process.stdout:
+            print(
+                line,
+                end="",
+                flush=True,
+            )
+            log_file.write(line)
+            log_file.flush()
+
+        return_code = process.wait()
+
+    if return_code != 0:
+        raise subprocess.CalledProcessError(
+            return_code,
+            command,
+        )
+
+
+def main() -> None:
+    args = parse_args()
+
+    if args.num_shards <= 0:
+        raise ValueError(
+            "num-shards must be positive"
+        )
+
+    if not (
+        0
+        <= args.shard_index
+        < args.num_shards
+    ):
+        raise ValueError(
+            "shard-index must be in "
+            "[0, num-shards)"
+        )
+
+    allowed_splits = set(
+        args.splits
+    )
+
+    if (
+        "test" in allowed_splits
+        and not args.allow_test_oracle
+    ):
+        raise RuntimeError(
+            "Test oracle generation is locked. "
+            "Final test recommendations must be "
+            "frozen first. Re-run with "
+            "--allow-test-oracle only after the "
+            "pre-test lock has been verified."
+        )
+
+    index_payload = json.loads(
+        args.index.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    tasks = [
+        task
+        for task
+        in index_payload["tasks"]
+        if task["split"]
+        in allowed_splits
+    ]
+
+    selected = [
+        task
+        for position, task
+        in enumerate(tasks)
+        if (
+            position
+            % args.num_shards
+            == args.shard_index
+        )
+    ]
+
+    if args.limit is not None:
+        selected = selected[
+            :args.limit
+        ]
+
+    print("Eligible tasks:", len(tasks))
+    print(
+        "Shard:",
+        args.shard_index,
+        "/",
+        args.num_shards,
+    )
+    print(
+        "Tasks assigned to shard:",
+        len(selected),
+    )
+    print("Device:", args.device)
+
+    completed = 0
+    skipped = 0
+
+    for local_index, task in enumerate(
+        selected
+    ):
+        task_id = str(
+            task["task_id"]
+        )
+
+        output_dir = (
+            args.output_root
+            / str(task["split"])
+            / str(task["dataset"])
+            / task_id
+        )
+
+        final_label = (
+            output_dir
+            / "final_label.json"
+        )
+
+        print()
+        print("=" * 80)
+        print(
+            f"[{local_index + 1}/"
+            f"{len(selected)}] "
+            f"{task_id}"
+        )
+        print("=" * 80)
+
+        if (
+            final_label.exists()
+            and not args.rerun_complete
+        ):
+            print(
+                "Final label exists: SKIPPED"
+            )
+            skipped += 1
+            continue
+
+        log_path = (
+            args.log_root
+            / str(task["split"])
+            / str(task["dataset"])
+            / f"{task_id}.log"
+        )
+
+        command = [
+            sys.executable,
+            "-u",
+            "scripts/"
+            "run_final_oracle_task_v2.py",
+            "--task-manifest",
+            str(task["manifest"]),
+            "--task-id",
+            task_id,
+            "--anchors",
+            str(args.anchors),
+            "--protocol",
+            str(args.protocol),
+            "--output-dir",
+            str(output_dir),
+            "--device",
+            args.device,
+        ]
+
+        run_and_tee(
+            command,
+            log_path,
+        )
+
+        completed += 1
+
+    print()
+    print("Completed this run:", completed)
+    print("Skipped complete:", skipped)
+    print("FINAL ORACLE SHARD: PASS")
+
+
+if __name__ == "__main__":
+    main()

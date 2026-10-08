@@ -1,0 +1,1340 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+import torch
+
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    RandomForestClassifier,
+)
+from sklearn.linear_model import (
+    LogisticRegression,
+)
+from sklearn.neighbors import (
+    NearestNeighbors,
+)
+from sklearn.preprocessing import (
+    StandardScaler,
+)
+from torch import nn
+
+from sml_hpo.descriptors.zero import (
+    ZERO_FEATURE_NAMES,
+)
+from sml_hpo.descriptors.probe import (
+    PROBE_FEATURE_NAMES,
+)
+
+
+TRAIN_PATH = Path(
+    "results/meta_learning/datasets_v2/all680.csv"
+)
+
+TEST_PATH = Path(
+    "results/descriptors/final800/merged/"
+    "test_full84.csv"
+)
+
+PROTOCOL_PATH = Path(
+    "configs/protocols/"
+    "final_meta_learning_v2.json"
+)
+
+FROZEN_ROOT = Path(
+    "results/meta_learning/final_frozen_v2"
+)
+
+ORACLE_ROOT = Path(
+    "results/oracles/final800_v2"
+)
+
+OUTPUT = Path(
+    "results/meta_learning/"
+    "locked_test_recommendations_v2"
+)
+
+SEEDS = [101, 202, 303]
+
+
+class MetaMLP(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+    ):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(
+                input_dim,
+                256,
+            ),
+            nn.LayerNorm(256),
+            nn.GELU(),
+            nn.Dropout(0.20),
+
+            nn.Linear(
+                256,
+                128,
+            ),
+            nn.LayerNorm(128),
+            nn.GELU(),
+            nn.Dropout(0.20),
+
+            nn.Linear(
+                128,
+                64,
+            ),
+            nn.LayerNorm(64),
+            nn.GELU(),
+            nn.Dropout(0.10),
+
+            nn.Linear(
+                64,
+                output_dim,
+            ),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+
+    with path.open("rb") as handle:
+        for chunk in iter(
+            lambda: handle.read(
+                1024 * 1024
+            ),
+            b"",
+        ):
+            digest.update(chunk)
+
+    return digest.hexdigest()
+
+
+def parse_equiv(value) -> list[str]:
+    result = json.loads(
+        str(value)
+    )
+
+    if not isinstance(result, list):
+        raise ValueError(
+            "Expected JSON list"
+        )
+
+    return [
+        str(item)
+        for item in result
+    ]
+
+
+def ensure_regime(
+    table: pd.DataFrame,
+) -> pd.DataFrame:
+    table = table.copy()
+
+    if "regime" not in table.columns:
+        if not {
+            "n_way",
+            "n_shot",
+        }.issubset(
+            table.columns
+        ):
+            raise RuntimeError(
+                "Cannot reconstruct regime"
+            )
+
+        table["regime"] = [
+            f"{int(nw)}w{int(ns)}s"
+            for nw, ns in zip(
+                table["n_way"],
+                table["n_shot"],
+            )
+        ]
+
+    return table
+
+
+def deterministic_mode(
+    values: list[str],
+) -> str:
+    counts = Counter(values)
+
+    maximum = max(
+        counts.values()
+    )
+
+    return sorted(
+        value
+        for value, count
+        in counts.items()
+        if count == maximum
+    )[0]
+
+
+def make_x(
+    table: pd.DataFrame,
+    features: list[str],
+) -> np.ndarray:
+    required = {
+        *features,
+        "n_way",
+        "n_shot",
+        "n_query",
+    }
+
+    missing = (
+        required
+        - set(table.columns)
+    )
+
+    if missing:
+        raise RuntimeError(
+            "Missing model-input columns: "
+            f"{sorted(missing)}"
+        )
+
+    descriptor = table[
+        features
+    ].to_numpy(
+        dtype=np.float64
+    )
+
+    protocol = table[
+        [
+            "n_way",
+            "n_shot",
+            "n_query",
+        ]
+    ].to_numpy(
+        dtype=np.float64
+    )
+
+    x = np.concatenate(
+        [
+            descriptor,
+            protocol,
+        ],
+        axis=1,
+    )
+
+    if not np.isfinite(x).all():
+        raise RuntimeError(
+            "Non-finite input"
+        )
+
+    return x
+
+
+def load_npz_scaler(
+    path: Path,
+):
+    payload = np.load(
+        path,
+        allow_pickle=True,
+    )
+
+    return (
+        payload["mean"],
+        payload["scale"],
+    )
+
+
+def predict_frozen_ensemble(
+    *,
+    table: pd.DataFrame,
+    variant: str,
+    features: list[str],
+) -> tuple[
+    list[str],
+    dict[int, list[str]],
+]:
+
+    variant_root = (
+        FROZEN_ROOT
+        / variant
+    )
+
+    x = make_x(
+        table,
+        features,
+    )
+
+    mean, scale = (
+        load_npz_scaler(
+            variant_root
+            / "scaler.npz"
+        )
+    )
+
+    if (
+        x.shape[1]
+        != len(mean)
+    ):
+        raise RuntimeError(
+            f"{variant}: scaler dimension "
+            "mismatch"
+        )
+
+    x = (
+        x - mean
+    ) / scale
+
+    x_tensor = torch.tensor(
+        x,
+        dtype=torch.float32,
+    )
+
+    per_seed = {}
+
+    for seed in SEEDS:
+        checkpoint_path = (
+            variant_root
+            / f"model_seed{seed}.pt"
+        )
+
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location="cpu",
+            weights_only=False,
+        )
+
+        vocabulary = [
+            str(item)
+            for item
+            in checkpoint[
+                "vocabulary"
+            ]
+        ]
+
+        input_dim = int(
+            checkpoint[
+                "input_dim"
+            ]
+        )
+
+        output_dim = int(
+            checkpoint[
+                "output_dim"
+            ]
+        )
+
+        if input_dim != x.shape[1]:
+            raise RuntimeError(
+                f"{variant} seed {seed}: "
+                "input dimension mismatch"
+            )
+
+        if (
+            output_dim
+            != len(vocabulary)
+        ):
+            raise RuntimeError(
+                f"{variant} seed {seed}: "
+                "output dimension mismatch"
+            )
+
+        model = MetaMLP(
+            input_dim,
+            output_dim,
+        )
+
+        model.load_state_dict(
+            checkpoint[
+                "model_state_dict"
+            ]
+        )
+
+        model.eval()
+
+        with torch.no_grad():
+            indices = (
+                model(x_tensor)
+                .argmax(dim=1)
+                .numpy()
+            )
+
+        predictions = [
+            vocabulary[int(index)]
+            for index in indices
+        ]
+
+        per_seed[
+            seed
+        ] = predictions
+
+    ensemble = []
+
+    for row_index in range(
+        len(table)
+    ):
+        ensemble.append(
+            deterministic_mode(
+                [
+                    per_seed[seed][
+                        row_index
+                    ]
+                    for seed in SEEDS
+                ]
+            )
+        )
+
+    return (
+        ensemble,
+        per_seed,
+    )
+
+
+def majority(
+    values: pd.Series,
+) -> str:
+    counts = Counter(
+        values.astype(str)
+    )
+
+    return sorted(
+        counts.items(),
+        key=lambda item: (
+            -item[1],
+            item[0],
+        ),
+    )[0][0]
+
+
+def static_predictions(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+):
+    global_anchor = majority(
+        train[
+            "best_config_id"
+        ]
+    )
+
+    regime_map = {
+        str(regime):
+            majority(
+                group[
+                    "best_config_id"
+                ]
+            )
+        for regime, group
+        in train.groupby(
+            "regime"
+        )
+    }
+
+    dataset_map = {
+        str(dataset):
+            majority(
+                group[
+                    "best_config_id"
+                ]
+            )
+        for dataset, group
+        in train.groupby(
+            "dataset"
+        )
+    }
+
+    dataset_regime_map = {
+        (
+            str(dataset),
+            str(regime),
+        ):
+            majority(
+                group[
+                    "best_config_id"
+                ]
+            )
+        for (
+            dataset,
+            regime,
+        ), group
+        in train.groupby(
+            [
+                "dataset",
+                "regime",
+            ]
+        )
+    }
+
+    global_pred = [
+        global_anchor
+        for _ in range(
+            len(test)
+        )
+    ]
+
+    regime_pred = []
+
+    dataset_pred = []
+
+    dataset_regime_pred = []
+
+    for _, row in (
+        test.iterrows()
+    ):
+        regime = str(
+            row["regime"]
+        )
+
+        dataset = str(
+            row["dataset"]
+        )
+
+        regime_pred.append(
+            regime_map.get(
+                regime,
+                global_anchor,
+            )
+        )
+
+        dataset_pred.append(
+            dataset_map.get(
+                dataset,
+                global_anchor,
+            )
+        )
+
+        dataset_regime_pred.append(
+            dataset_regime_map.get(
+                (
+                    dataset,
+                    regime,
+                ),
+                dataset_map.get(
+                    dataset,
+                    global_anchor,
+                ),
+            )
+        )
+
+    return {
+        "global_majority":
+            global_pred,
+
+        "regime_majority":
+            regime_pred,
+
+        "dataset_majority":
+            dataset_pred,
+
+        "dataset_regime_majority":
+            dataset_regime_pred,
+    }
+
+
+def expand_soft_labels(
+    x: np.ndarray,
+    table: pd.DataFrame,
+):
+    x_rows = []
+    labels = []
+    weights = []
+
+    for index, value in enumerate(
+        table[
+            "oracle_equivalent_config_ids_json"
+        ]
+    ):
+        ids = parse_equiv(
+            value
+        )
+
+        if not ids:
+            raise RuntimeError(
+                "Empty equivalent set"
+            )
+
+        weight = (
+            1.0 / len(ids)
+        )
+
+        for config_id in ids:
+            x_rows.append(
+                x[index]
+            )
+
+            labels.append(
+                config_id
+            )
+
+            weights.append(
+                weight
+            )
+
+    return (
+        np.asarray(
+            x_rows,
+            dtype=np.float64,
+        ),
+        np.asarray(
+            labels,
+            dtype=object,
+        ),
+        np.asarray(
+            weights,
+            dtype=np.float64,
+        ),
+    )
+
+
+def classical_predictions(
+    *,
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    features: list[str],
+    prefix: str,
+):
+    x_train = make_x(
+        train,
+        features,
+    )
+
+    x_test = make_x(
+        test,
+        features,
+    )
+
+    scaler = StandardScaler()
+
+    train_scaled = (
+        scaler.fit_transform(
+            x_train
+        )
+    )
+
+    test_scaled = (
+        scaler.transform(
+            x_test
+        )
+    )
+
+    (
+        expanded_x,
+        expanded_y,
+        expanded_weight,
+    ) = expand_soft_labels(
+        train_scaled,
+        train,
+    )
+
+    results = {}
+
+    model_root = (
+        OUTPUT
+        / "classical_refit"
+        / prefix
+    )
+
+    model_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    logistic = (
+        LogisticRegression(
+            solver="lbfgs",
+            C=1.0,
+            max_iter=5000,
+            random_state=101,
+        )
+    )
+
+    logistic.fit(
+        expanded_x,
+        expanded_y,
+        sample_weight=(
+            expanded_weight
+        ),
+    )
+
+    results[
+        f"{prefix}_weighted_logistic"
+    ] = (
+        logistic.predict(
+            test_scaled
+        ).astype(str).tolist()
+    )
+
+    joblib.dump(
+        logistic,
+        model_root
+        / "weighted_logistic.joblib",
+    )
+
+    forest = (
+        RandomForestClassifier(
+            n_estimators=500,
+            max_features="sqrt",
+            min_samples_leaf=2,
+            random_state=101,
+            n_jobs=-1,
+        )
+    )
+
+    forest.fit(
+        expanded_x,
+        expanded_y,
+        sample_weight=(
+            expanded_weight
+        ),
+    )
+
+    results[
+        f"{prefix}_weighted_random_forest"
+    ] = (
+        forest.predict(
+            test_scaled
+        ).astype(str).tolist()
+    )
+
+    joblib.dump(
+        forest,
+        model_root
+        / "weighted_random_forest.joblib",
+    )
+
+    extra = (
+        ExtraTreesClassifier(
+            n_estimators=500,
+            max_features="sqrt",
+            min_samples_leaf=2,
+            random_state=101,
+            n_jobs=-1,
+        )
+    )
+
+    extra.fit(
+        expanded_x,
+        expanded_y,
+        sample_weight=(
+            expanded_weight
+        ),
+    )
+
+    results[
+        f"{prefix}_weighted_extra_trees"
+    ] = (
+        extra.predict(
+            test_scaled
+        ).astype(str).tolist()
+    )
+
+    joblib.dump(
+        extra,
+        model_root
+        / "weighted_extra_trees.joblib",
+    )
+
+    neighbors = (
+        NearestNeighbors(
+            n_neighbors=min(
+                15,
+                len(train),
+            ),
+            metric="euclidean",
+        )
+    )
+
+    neighbors.fit(
+        train_scaled
+    )
+
+    distances, indices = (
+        neighbors.kneighbors(
+            test_scaled
+        )
+    )
+
+    knn_predictions = []
+
+    for (
+        row_distances,
+        row_indices,
+    ) in zip(
+        distances,
+        indices,
+    ):
+        scores = {}
+
+        for (
+            distance,
+            train_index,
+        ) in zip(
+            row_distances,
+            row_indices,
+        ):
+            ids = parse_equiv(
+                train.iloc[
+                    int(train_index)
+                ][
+                    "oracle_equivalent_config_ids_json"
+                ]
+            )
+
+            neighbor_weight = (
+                1.0
+                / (
+                    float(distance)
+                    + 1e-8
+                )
+            )
+
+            config_weight = (
+                neighbor_weight
+                / len(ids)
+            )
+
+            for config_id in ids:
+                scores[
+                    config_id
+                ] = (
+                    scores.get(
+                        config_id,
+                        0.0,
+                    )
+                    + config_weight
+                )
+
+        knn_predictions.append(
+            sorted(
+                scores.items(),
+                key=lambda item: (
+                    -item[1],
+                    item[0],
+                ),
+            )[0][0]
+        )
+
+    results[
+        f"{prefix}_equivalence_knn_k15"
+    ] = knn_predictions
+
+    np.savez(
+        model_root
+        / "scaler.npz",
+        mean=scaler.mean_,
+        scale=scaler.scale_,
+    )
+
+    return results
+
+
+def main():
+    OUTPUT.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    protocol = json.loads(
+        PROTOCOL_PATH.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    if (
+        protocol["status"]
+        != "FROZEN_BEFORE_TEST_ORACLE"
+    ):
+        raise RuntimeError(
+            "Final protocol is not frozen"
+        )
+
+    if protocol[
+        "test_oracle_labels_seen"
+    ]:
+        raise RuntimeError(
+            "Protocol indicates "
+            "test labels were already seen"
+        )
+
+    test_labels = list(
+        ORACLE_ROOT.glob(
+            "test/**/final_label.json"
+        )
+    )
+
+    if test_labels:
+        raise RuntimeError(
+            f"STOP: {len(test_labels)} "
+            "test oracle labels already exist"
+        )
+
+    train = pd.read_csv(
+        TRAIN_PATH
+    )
+
+    test = pd.read_csv(
+        TEST_PATH
+    )
+
+    train = ensure_regime(
+        train
+    )
+
+    test = ensure_regime(
+        test
+    )
+
+    if len(train) != 680:
+        raise RuntimeError(
+            f"Expected 680 refit tasks, "
+            f"found {len(train)}"
+        )
+
+    if len(test) != 120:
+        raise RuntimeError(
+            f"Expected 120 test tasks, "
+            f"found {len(test)}"
+        )
+
+    if train[
+        "task_id"
+    ].duplicated().any():
+        raise RuntimeError(
+            "Duplicate refit task IDs"
+        )
+
+    if test[
+        "task_id"
+    ].duplicated().any():
+        raise RuntimeError(
+            "Duplicate test task IDs"
+        )
+
+    if not set(
+        train["task_id"]
+    ).isdisjoint(
+        set(test["task_id"])
+    ):
+        raise RuntimeError(
+            "Train/test task-ID overlap"
+        )
+
+    zero_features = list(
+        ZERO_FEATURE_NAMES
+    )
+
+    probe_features = [
+        *ZERO_FEATURE_NAMES,
+        *PROBE_FEATURE_NAMES,
+    ]
+
+    if len(
+        zero_features
+    ) != 64:
+        raise RuntimeError(
+            "Expected 64 Zero-SML features"
+        )
+
+    if len(
+        probe_features
+    ) != 84:
+        raise RuntimeError(
+            "Expected 84 Probe-SML features"
+        )
+
+    result = test[
+        [
+            "task_id",
+            "dataset",
+            "regime",
+            "n_way",
+            "n_shot",
+            "n_query",
+        ]
+    ].copy()
+
+    # --------------------------------------
+    # Frozen neural ensembles
+    # --------------------------------------
+
+    (
+        zero_ensemble,
+        zero_per_seed,
+    ) = predict_frozen_ensemble(
+        table=test,
+        variant="zero_sml",
+        features=zero_features,
+    )
+
+    (
+        probe_ensemble,
+        probe_per_seed,
+    ) = predict_frozen_ensemble(
+        table=test,
+        variant="probe_sml",
+        features=probe_features,
+    )
+
+    for seed in SEEDS:
+        result[
+            f"zero_sml_seed{seed}"
+        ] = zero_per_seed[
+            seed
+        ]
+
+        result[
+            f"probe_sml_seed{seed}"
+        ] = probe_per_seed[
+            seed
+        ]
+
+    result[
+        "zero_sml_ensemble"
+    ] = zero_ensemble
+
+    result[
+        "probe_sml_ensemble"
+    ] = probe_ensemble
+
+    # --------------------------------------
+    # Static baselines refit on all 680
+    # --------------------------------------
+
+    static = static_predictions(
+        train,
+        test,
+    )
+
+    for name, predictions in (
+        static.items()
+    ):
+        result[name] = predictions
+
+    # --------------------------------------
+    # Frozen classical methods refit on 680
+    # --------------------------------------
+
+    zero_classical = (
+        classical_predictions(
+            train=train,
+            test=test,
+            features=zero_features,
+            prefix="zero",
+        )
+    )
+
+    probe_classical = (
+        classical_predictions(
+            train=train,
+            test=test,
+            features=probe_features,
+            prefix="probe",
+        )
+    )
+
+    for name, predictions in {
+        **zero_classical,
+        **probe_classical,
+    }.items():
+        result[name] = predictions
+
+    # --------------------------------------
+    # Validate recommendation IDs
+    # --------------------------------------
+
+    vocabulary = set()
+
+    for value in train[
+        "oracle_equivalent_config_ids_json"
+    ]:
+        vocabulary.update(
+            parse_equiv(value)
+        )
+
+    prediction_columns = [
+        column
+        for column in result.columns
+        if column not in {
+            "task_id",
+            "dataset",
+            "regime",
+            "n_way",
+            "n_shot",
+            "n_query",
+        }
+    ]
+
+    invalid = {}
+
+    for column in (
+        prediction_columns
+    ):
+        unknown = (
+            set(
+                result[
+                    column
+                ].astype(str)
+            )
+            - vocabulary
+        )
+
+        if unknown:
+            invalid[
+                column
+            ] = sorted(
+                unknown
+            )
+
+    if invalid:
+        raise RuntimeError(
+            "Unknown predicted configs: "
+            f"{invalid}"
+        )
+
+    recommendation_path = (
+        OUTPUT
+        / "test120_recommendations.csv"
+    )
+
+    result.to_csv(
+        recommendation_path,
+        index=False,
+    )
+
+    # --------------------------------------
+    # Diagnostics WITHOUT TEST LABELS
+    # --------------------------------------
+
+    same_neural = (
+        result[
+            "zero_sml_ensemble"
+        ]
+        == result[
+            "probe_sml_ensemble"
+        ]
+    )
+
+    print()
+    print("=" * 76)
+    print(
+        "LOCKED TEST RECOMMENDATIONS"
+    )
+    print("=" * 76)
+
+    print(
+        "Test tasks:",
+        len(result),
+    )
+
+    print(
+        "Prediction methods:",
+        len(
+            prediction_columns
+        ),
+    )
+
+    print(
+        "Zero/Probe ensemble "
+        "exact agreement:",
+        f"{100*same_neural.mean():.2f}%",
+    )
+
+    print()
+    print(
+        "Zero-SML ensemble "
+        "recommendation distribution:"
+    )
+
+    print(
+        result[
+            "zero_sml_ensemble"
+        ]
+        .value_counts()
+        .to_string()
+    )
+
+    print()
+    print(
+        "Probe-SML ensemble "
+        "recommendation distribution:"
+    )
+
+    print(
+        result[
+            "probe_sml_ensemble"
+        ]
+        .value_counts()
+        .to_string()
+    )
+
+    # --------------------------------------
+    # Cryptographic lock manifest
+    # --------------------------------------
+
+    files_to_hash = [
+        TEST_PATH,
+        TRAIN_PATH,
+        PROTOCOL_PATH,
+        recommendation_path,
+
+        FROZEN_ROOT
+        / "zero_sml"
+        / "scaler.npz",
+
+        FROZEN_ROOT
+        / "probe_sml"
+        / "scaler.npz",
+    ]
+
+    for variant in [
+        "zero_sml",
+        "probe_sml",
+    ]:
+        for seed in SEEDS:
+            files_to_hash.append(
+                FROZEN_ROOT
+                / variant
+                / f"model_seed{seed}.pt"
+            )
+
+    hashes = {}
+
+    for path in files_to_hash:
+        if not path.exists():
+            raise FileNotFoundError(
+                path
+            )
+
+        hashes[str(path)] = {
+            "sha256":
+                sha256_file(path),
+
+            "size_bytes":
+                path.stat().st_size,
+        }
+
+    lock = {
+        "schema_version": 2,
+
+        "created_at_utc":
+            datetime.now(
+                timezone.utc
+            ).isoformat(),
+
+        "status":
+            "LOCKED_BEFORE_TEST_ORACLE",
+
+        "test_oracle_labels_seen":
+            False,
+
+        "test_task_count":
+            120,
+
+        "prediction_method_count":
+            len(
+                prediction_columns
+            ),
+
+        "prediction_columns":
+            prediction_columns,
+
+        "primary_method":
+            "zero_sml_ensemble",
+
+        "probe_ablation":
+            "probe_sml_ensemble",
+
+        "recommendation_file":
+            str(
+                recommendation_path
+            ),
+
+        "files":
+            hashes,
+    }
+
+    lock_path = (
+        OUTPUT
+        / "recommendation_lock_manifest.json"
+    )
+
+    lock_path.write_text(
+        json.dumps(
+            lock,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    lock_hash = (
+        sha256_file(
+            lock_path
+        )
+    )
+
+    (
+        OUTPUT
+        / "recommendation_lock_manifest.sha256"
+    ).write_text(
+        (
+            f"{lock_hash}  "
+            f"{lock_path.name}\n"
+        ),
+        encoding="utf-8",
+    )
+
+    recommendation_hash = (
+        sha256_file(
+            recommendation_path
+        )
+    )
+
+    (
+        OUTPUT
+        / "test120_recommendations.sha256"
+    ).write_text(
+        (
+            f"{recommendation_hash}  "
+            f"{recommendation_path.name}\n"
+        ),
+        encoding="utf-8",
+    )
+
+    print()
+    print(
+        "Recommendation file:",
+        recommendation_path,
+    )
+
+    print(
+        "Recommendation SHA256:",
+        recommendation_hash,
+    )
+
+    print(
+        "Lock manifest:",
+        lock_path,
+    )
+
+    print(
+        "Lock manifest SHA256:",
+        lock_hash,
+    )
+
+    print()
+    print(
+        "TEST ORACLE LABEL COUNT: 0"
+    )
+
+    print()
+    print(
+        "LOCKED TEST RECOMMENDATIONS: PASS"
+    )
+
+
+if __name__ == "__main__":
+    main()

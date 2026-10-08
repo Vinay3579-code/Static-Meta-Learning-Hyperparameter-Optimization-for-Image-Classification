@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "purpose": "oracle_training_budget_stability",
+  "budgets": [
+    100,
+    200,
+    300
+  ],
+  "reference_budget": 300,
+  "validation_episodes": 100,
+  "model_seeds_screening": [
+    101
+  ],
+  "tasks": [
+    {
+      "task_id": "omniglot_train_5w1s_0000",
+      "dataset": "omniglot",
+      "regime": "5w1s",
+      "n_way": 5,
+      "n_shot": 1,
+      "n_query": 15,
+      "manifest": "data/manifests/final800/train/omniglot_5w1s.json"
+    },
+    {
+      "task_id": "omniglot_train_10w5s_0000",
+      "dataset": "omniglot",
+      "regime": "10w5s",
+      "n_way": 10,
+      "n_shot": 5,
+      "n_query": 10,
+      "manifest": "data/manifests/final800/train/omniglot_10w5s.json"
+    },
+    {
+      "task_id": "cifar100_train_5w1s_0000",
+      "dataset": "cifar100",
+      "regime": "5w1s",
+      "n_way": 5,
+      "n_shot": 1,
+      "n_query": 15,
+      "manifest": "data/manifests/final800/train/cifar100_5w1s.json"
+    },
+    {
+      "task_id": "cifar100_train_10w5s_0000",
+      "dataset": "cifar100",
+      "regime": "10w5s",
+      "n_way": 10,
+      "n_shot": 5,
+      "n_query": 10,
+      "manifest": "data/manifests/final800/train/cifar100_10w5s.json"
+    },
+    {
+      "task_id": "miniimagenet_train_5w1s_0000",
+      "dataset": "miniimagenet",
+      "regime": "5w1s",
+      "n_way": 5,
+      "n_shot": 1,
+      "n_query": 15,
+      "manifest": "data/manifests/final800/train/miniimagenet_5w1s.json"
+    },
+    {
+      "task_id": "miniimagenet_train_10w5s_0000",
+      "dataset": "miniimagenet",
+      "regime": "10w5s",
+      "n_way": 10,
+      "n_shot": 5,
+      "n_query": 10,
+      "manifest": "data/manifests/final800/train/miniimagenet_10w5s.json"
+    },
+    {
+      "task_id": "dtd_train_5w1s_0000",
+      "dataset": "dtd",
+      "regime": "5w1s",
+      "n_way": 5,
+      "n_shot": 1,
+      "n_query": 15,
+      "manifest": "data/manifests/final800/train/dtd_5w1s.json"
+    },
+    {
+      "task_id": "dtd_train_10w5s_0000",
+      "dataset": "dtd",
+      "regime": "10w5s",
+      "n_way": 10,
+      "n_shot": 5,
+      "n_query": 10,
+      "manifest": "data/manifests/final800/train/dtd_10w5s.json"
+    },
+    {
+      "task_id": "flowers102_train_5w1s_0000",
+      "dataset": "flowers102",
+      "regime": "5w1s",
+      "n_way": 5,
+      "n_shot": 1,
+      "n_query": 15,
+      "manifest": "data/manifests/final800/train/flowers102_5w1s.json"
+    },
+    {
+      "task_id": "flowers102_train_10w5s_0000",
+      "dataset": "flowers102",
+      "regime": "10w5s",
+      "n_way": 10,
+      "n_shot": 5,
+      "n_query": 10,
+      "manifest": "data/manifests/final800/train/flowers102_10w5s.json"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sml-hpo"
+version = "0.1.0"
+description = "Static meta-learning for HPO in few-shot image classification"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]

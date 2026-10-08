@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "method": "mixed_latin_hypercube",
+  "generation_seed": 20260803,
+  "configuration_count": 40,
+  "continuous_space": {
+    "learning_rate": {
+      "Adam": [
+        1e-05,
+        0.003
+      ],
+      "AdamW": [
+        1e-05,
+        0.003
+      ],
+      "SGD": [
+        0.001,
+        0.1
+      ],
+      "scale": "log10"
+    },
+    "weight_decay": {
+      "range": [
+        1e-06,
+        0.01
+      ],
+      "scale": "log10"
+    }
+  },
+  "categorical_space": {
+    "optimizer": [
+      "Adam",
+      "AdamW",
+      "SGD"
+    ],
+    "embedding_dim": [
+      64,
+      128,
+      256
+    ],
+    "dropout": [
+      0.0,
+      0.1,
+      0.3
+    ],
+    "scheduler": [
+      "none",
+      "cosine"
+    ]
+  },
+  "fixed_hyperparameters": {
+    "input_channels": 3,
+    "hidden_channels": 64,
+    "sgd_momentum": 0.9,
+    "gradient_clip_norm": 5.0,
+    "cosine_eta_min_ratio": 0.01
+  },
+  "configurations": [
+    {
+      "schema_version": 1,
+      "config_id": "anchor_000",
+      "learning_rate": 0.007280927683538244,
+      "weight_decay": 0.0011461553559345044,
+      "optimizer": "SGD",
+      "embedding_dim": 64,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_001",
+      "learning_rate": 5.891206173187589e-05,
+      "weight_decay": 3.915296469609911e-05,
+      "optimizer": "Adam",
+      "embedding_dim": 256,
+      "dropout": 0.0,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_002",
+      "learning_rate": 0.00044266115197323576,
+      "weight_decay": 0.005256652192441402,
+      "optimizer": "Adam",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_003",
+      "learning_rate": 1.0264149318998725e-05,
+      "weight_decay": 2.2566720113883793e-05,
+      "optimizer": "AdamW",
+      "embedding_dim": 256,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_004",
+      "learning_rate": 0.0012340731102230913,
+      "weight_decay": 0.007539857519409329,
+      "optimizer": "SGD",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_005",
+      "learning_rate": 4.552263560271878e-05,
+      "weight_decay": 8.812682506790309e-06,
+      "optimizer": "Adam",
+      "embedding_dim": 256,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_006",
+      "learning_rate": 0.0017831206407756825,
+      "weight_decay": 7.756874803635645e-05,
+      "optimizer": "AdamW",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_007",
+      "learning_rate": 0.0016001280790549403,
+      "weight_decay": 2.420752649387054e-06,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_008",
+      "learning_rate": 1.6531529072458205e-05,
+      "weight_decay": 0.0001732596231393013,
+      "optimizer": "AdamW",
+      "embedding_dim": 256,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_009",
+      "learning_rate": 0.044404175989401065,
+      "weight_decay": 1.209024630327398e-06,
+      "optimizer": "SGD",
+      "embedding_dim": 128,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_010",
+      "learning_rate": 0.011572760783359962,
+      "weight_decay": 0.004933253717134881,
+      "optimizer": "SGD",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_011",
+      "learning_rate": 0.015192648882397694,
+      "weight_decay": 6.807371439949483e-06,
+      "optimizer": "SGD",
+      "embedding_dim": 128,
+      "dropout": 0.1,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_012",
+      "learning_rate": 3.372432745134259e-05,
+      "weight_decay": 0.00041375678802421266,
+      "optimizer": "AdamW",
+      "embedding_dim": 64,
+      "dropout": 0.0,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_013",
+      "learning_rate": 1.8456743536617127e-05,
+      "weight_decay": 0.0017532558641211338,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_014",
+      "learning_rate": 0.00015235706324164867,
+      "weight_decay": 9.080770667053117e-05,
+      "optimizer": "Adam",
+      "embedding_dim": 128,
+      "dropout": 0.0,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_015",
+      "learning_rate": 0.0005210191179463315,
+      "weight_decay": 0.002016121362972535,
+      "optimizer": "AdamW",
+      "embedding_dim": 64,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_016",
+      "learning_rate": 7.400707600922602e-05,
+      "weight_decay": 2.92249656008258e-06,
+      "optimizer": "AdamW",
+      "embedding_dim": 64,
+      "dropout": 0.0,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_017",
+      "learning_rate": 0.008439122917802147,
+      "weight_decay": 0.00022400250032730162,
+      "optimizer": "SGD",
+      "embedding_dim": 64,
+      "dropout": 0.1,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_018",
+      "learning_rate": 0.030110088724402413,
+      "weight_decay": 5.245749496482024e-06,
+      "optimizer": "SGD",
+      "embedding_dim": 128,
+      "dropout": 0.0,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_019",
+      "learning_rate": 0.0025761266515211506,
+      "weight_decay": 1.5883260120699065e-06,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_020",
+      "learning_rate": 0.0006004075141105157,
+      "weight_decay": 1.3955792228194597e-06,
+      "optimizer": "AdamW",
+      "embedding_dim": 128,
+      "dropout": 0.0,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_021",
+      "learning_rate": 2.896731088508921e-05,
+      "weight_decay": 0.0035039291241956362,
+      "optimizer": "AdamW",
+      "embedding_dim": 256,
+      "dropout": 0.3,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_022",
+      "learning_rate": 2.1579794004447584e-05,
+      "weight_decay": 4.569792250712901e-06,
+      "optimizer": "AdamW",
+      "embedding_dim": 256,
+      "dropout": 0.1,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_023",
+      "learning_rate": 0.00018218341067378408,
+      "weight_decay": 1.0711544925704421e-05,
+      "optimizer": "Adam",
+      "embedding_dim": 256,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_024",
+      "learning_rate": 0.01776284293318161,
+      "weight_decay": 1.650363989419507e-05,
+      "optimizer": "SGD",
+      "embedding_dim": 256,
+      "dropout": 0.3,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_025",
+      "learning_rate": 0.012630807696608376,
+      "weight_decay": 0.00015616521407761275,
+      "optimizer": "SGD",
+      "embedding_dim": 64,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_026",
+      "learning_rate": 0.002030996186073901,
+      "weight_decay": 1.3373191228229048e-05,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_027",
+      "learning_rate": 3.7104600323182206e-05,
+      "weight_decay": 2.751157368836259e-05,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.1,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_028",
+      "learning_rate": 7.253403752293777e-05,
+      "weight_decay": 0.0006800986414789047,
+      "optimizer": "AdamW",
+      "embedding_dim": 256,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_029",
+      "learning_rate": 2.371206347398913e-05,
+      "weight_decay": 0.0008698109957379966,
+      "optimizer": "AdamW",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_030",
+      "learning_rate": 0.0009555739793376709,
+      "weight_decay": 0.00011319403173181157,
+      "optimizer": "AdamW",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_031",
+      "learning_rate": 0.000806526474062101,
+      "weight_decay": 0.0003468536465631505,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_032",
+      "learning_rate": 0.019087204770920133,
+      "weight_decay": 4.322588022695724e-05,
+      "optimizer": "SGD",
+      "embedding_dim": 64,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_033",
+      "learning_rate": 1.447975640784355e-05,
+      "weight_decay": 0.0003132064567573245,
+      "optimizer": "Adam",
+      "embedding_dim": 128,
+      "dropout": 0.3,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_034",
+      "learning_rate": 0.003865357076218864,
+      "weight_decay": 5.788103249782427e-05,
+      "optimizer": "SGD",
+      "embedding_dim": 128,
+      "dropout": 0.1,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_035",
+      "learning_rate": 0.0013871456868142327,
+      "weight_decay": 0.0014304710529724019,
+      "optimizer": "AdamW",
+      "embedding_dim": 256,
+      "dropout": 0.1,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_036",
+      "learning_rate": 0.0028665757060162894,
+      "weight_decay": 3.6007806386080305e-06,
+      "optimizer": "Adam",
+      "embedding_dim": 64,
+      "dropout": 0.1,
+      "scheduler": "none"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_037",
+      "learning_rate": 0.005794031010535881,
+      "weight_decay": 0.008321637225985855,
+      "optimizer": "SGD",
+      "embedding_dim": 256,
+      "dropout": 0.0,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_038",
+      "learning_rate": 0.04979819379099173,
+      "weight_decay": 0.0029570936301568217,
+      "optimizer": "SGD",
+      "embedding_dim": 256,
+      "dropout": 0.3,
+      "scheduler": "cosine"
+    },
+    {
+      "schema_version": 1,
+      "config_id": "anchor_039",
+      "learning_rate": 0.00010064593858260694,
+      "weight_decay": 0.0005205380505673681,
+      "optimizer": "Adam",
+      "embedding_dim": 256,
+      "dropout": 0.0,
+      "scheduler": "none"
+    }
+  ]
+}

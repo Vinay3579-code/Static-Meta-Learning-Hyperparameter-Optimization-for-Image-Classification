@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: sml-hpo
+Version: 0.1.0
+Summary: Static meta-learning for HPO in few-shot image classification
+Requires-Python: >=3.10

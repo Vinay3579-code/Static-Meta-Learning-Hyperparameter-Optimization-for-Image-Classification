@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "protocol_name": "two_stage_robust_oracle_v2",
+  "anchor_manifest": "configs/search_spaces/oracle_anchors_v2_64.json",
+  "anchor_manifest_sha256": "97cbfbb0967c967e05734aa4634dd78c195fcafaefc96d9a78640fd0e89a7913",
+  "configuration_count": 64,
+  "training_episodes": 200,
+  "validation_episodes": 100,
+  "screening_seed": 101,
+  "confirmation_seeds": [
+    202,
+    303
+  ],
+  "robust_seed_set": [
+    101,
+    202,
+    303
+  ],
+  "candidate_k": 4,
+  "candidate_equivalence_epsilon": 0.002,
+  "candidate_rule": "seed101_top_k_union_all_within_epsilon_of_seed101_best",
+  "final_ranking_metric": "mean_validation_accuracy_over_seeds_101_202_303",
+  "oracle_equivalence_epsilon": 0.002,
+  "meta_splits_to_label_now": [
+    "train",
+    "validation"
+  ],
+  "test_oracles_locked": true,
+  "evidence": {
+    "budget_summary": "results/oracles/budget_stability_v2_analysis/summary.json",
+    "budget_summary_sha256": "5c2db0b31350b4c2ba09bd69e4a6b7923a206ee93a5225f42be0c342bf20a731",
+    "seed_summary": "results/oracles/seed_stability_v2_analysis/summary.json",
+    "seed_summary_sha256": "5adedf1643d7b6eee3ce467b4e8db06bdf9a66502500bbd7b8e9d1bdd7974d73",
+    "holdout_summary": "results/oracles/candidate_holdout_v2_analysis/summary.json",
+    "holdout_summary_sha256": "2fcdc0a15d537bae29da45ce9b5a135c72848ce483505f0e8a0ab616abc817c3",
+    "holdout_task_count": 20,
+    "holdout_exact_recall_at_k4": 1.0,
+    "holdout_maximum_regret_pp": 0.0
+  }
+}
