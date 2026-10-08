@@ -67,6 +67,12 @@ Both policies use an equivalence-aware target over a **19-configuration meta-tra
 
 The implementation follows four conceptual stages.
 
+<p align="center">
+
+<img src="figures/Static Meta-Learning Pipeline Architecture.png" width="1000">
+
+</p>
+
 ```mermaid
 flowchart TD
     A[5 datasets × 4 episodic regimes] --> B[800 deterministic tasks\n560 train / 120 validation / 120 test]
