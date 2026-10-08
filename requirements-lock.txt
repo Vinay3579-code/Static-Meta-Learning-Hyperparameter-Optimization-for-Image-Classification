@@ -164,7 +164,7 @@ tinycss2==1.5.1
 toolz==1.1.0
 torch==2.13.0
 torchvision==0.28.0
-tornado==6.5.7
+tornado==6.5.9
 tqdm==4.70.0
 traitlets==5.16.0
 triton==3.7.1
