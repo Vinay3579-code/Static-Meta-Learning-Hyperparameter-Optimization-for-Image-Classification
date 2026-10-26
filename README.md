@@ -67,6 +67,14 @@ Both policies use an equivalence-aware target over a **19-configuration meta-tra
 
 ---
 
+# Citation
+
+Associated manuscript title:
+
+> **Static Meta-Learning for Direct Hyperparameter Recommendation in Few-Shot Image Classification**
+
+---
+
 # Architecture
 
 The implementation follows four conceptual stages.
@@ -1652,16 +1660,6 @@ The results do not establish that the same recommendation strategy will transfer
 - continuous hyperparameter spaces outside the 64-anchor portfolio
 
 The validation-selected reference is also not a global optimum. It is the best configuration under the explicitly frozen two-stage validation protocol.
-
----
-
-# Citation
-
-Associated manuscript title:
-
-> **Static Meta-Learning for Direct Hyperparameter Recommendation in Few-Shot Image Classification**
-
-When the final publication citation is available, add the journal-formatted BibTeX entry here.
 
 ---
 
