@@ -69,10 +69,6 @@ Both policies use an equivalence-aware target over a **19-configuration meta-tra
 
 # Citation
 
-Associated manuscript title:
-
-> **Static Meta-Learning for Direct Hyperparameter Recommendation in Few-Shot Image Classification**
-
 ---
 
 # Architecture
